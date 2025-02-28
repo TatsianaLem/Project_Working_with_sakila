@@ -5,8 +5,8 @@ from pymysql.cursors import DictCursor
 
 class DBConnection:
     """
-        Класс для управления соединением с базой данных.
-        Поддерживает подключение, выполнение запросов и логирование.
+        Class for managing the connection to the database.
+        Supports connection, executing queries, and logging.
     """
     def __init__(self, dbconfig: dict, log_file: str):
         self._dbconfig = dbconfig
@@ -17,7 +17,7 @@ class DBConnection:
 
     def _setup_logging(self, log_file: str):
         """
-            Настраивает систему логирования.
+            Configures the logging system.
         """
         if not logging.getLogger().hasHandlers():
             logging.basicConfig(filename=log_file, level=logging.INFO,
@@ -25,24 +25,24 @@ class DBConnection:
 
     def _connect(self):
         """
-            Создаёт подключение к базе данных и курсор.
-            Логирует ошибки при неудачном подключении.
+            Creates a connection to the database and a cursor. Logs errors in case of a failed connection.
         """
         try:
             self._connection = pymysql.connect(**self._dbconfig, cursorclass=DictCursor)
             self._cursor = self._connection.cursor()
         except pymysql.Error as e:
-            logging.error(f"Ошибка подключения к БД: {e}")
+            logging.error(f"Database connection error: {e}")
             self._connection = None
 
     def execute_query(self, query: str, params=None):
-        """Выполняет SQL-запрос и возвращает результат (если есть)."""
+        """Executes an SQL query and returns the result (if any)."""
+
         if not self._connection or not self._connection.open:
-            logging.warning("Соединение отсутствует, пытаемся переподключиться...")
+            logging.warning("No connection available, attempting to reconnect...")
             self._connect()
 
         if not self._connection:
-            logging.error("Не удалось восстановить соединение с БД.")
+            logging.error("Failed to restore the connection to the database.")
             return None
 
         self.log_query(query)
@@ -53,41 +53,39 @@ class DBConnection:
                     return cursor.fetchall()
                 self._connection.commit()
         except pymysql.Error as e:
-            logging.error(f"Ошибка выполнения запроса: {e}")
+            logging.error(f"Error executing the query: {e}")
             self._connection.rollback()
 
     def log_query(self, query: str):
-        """ Логирует выполняемый SQL-запрос. """
+        """ Logs the executed SQL query. """
         logging.info(f"SQL Query: {query}")
 
     def get_connection(self):
-        """ Возвращает текущее соединение с БД, переподключаясь при необходимости. """
+        """ Returns the current connection to the database, reconnecting if necessary. """
         if not self._connection or not self._connection.open:
             self._connect()
         return self._connection
 
     def get_cursor(self):
-        """Возвращает новый курсор для каждого вызова."""
+        """ Returns a new cursor for each call. """
         if not self._connection or not self._connection.open:
             self._connect()
         return self._connection.cursor() if self._connection else None
 
     def close(self):
-        """Закрывает соединение с базой данных и курсор."""
+        """ Closes the connection to the database and the cursor."""
         if self._cursor:
             self._cursor.close()
         if self._connection and self._connection.open:
             self._connection.close()
 
     def __enter__(self):
-        """
-            Метод для использования класса в контекстном менеджере (with).
-        """
+        """ Method for using the class in a context manager (with). """
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """
-            Метод для корректного выхода из контекстного менеджера.
-            Закрывает соединение при выходе из блока with.
+            Method for properly exiting the context manager.
+            Closes the connection when exiting the with block.
         """
         self.close()

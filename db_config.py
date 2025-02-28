@@ -3,15 +3,15 @@ import dotenv
 
 
 class DBConfig:
-    """ Класс для загрузки и предоставления конфигурации базы данных из переменных окружения."""
+    """ Class for loading and providing database configuration from environment variables."""
     def __init__(self):
-        """ Инициализирует объект DBConfig и загружает переменные окружения из файла .env."""
+        """ Initializes the DBConfig object and loads environment variables from the .env file."""
         dotenv.load_dotenv()
 
         # path_to_env = os.path.join(os.getcwd(), '.env')
         # dotenv.load_dotenv(dotenv_path=path_to_env)
     def get_dbconfig(self):
-        """ Возвращает словарь с конфигурацией базы данных. """
+        """ Returns a dictionary with the database configuration. """
         dbconfig = {
             'host': os.getenv("HOST"),
             'user': os.getenv("USER"),
